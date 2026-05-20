@@ -2,7 +2,7 @@
 
 A browser-based NLP classifier that detects fake news headlines and spam emails with a confidence score and signal-level explainability — built with the Anthropic Claude API.
 
-![screenshot](screenshot.png)
+<img width="901" height="978" alt="image" src="https://github.com/user-attachments/assets/6542aa29-1606-4ae3-bb9e-f22f63373337" />
 
 ## Features
 
