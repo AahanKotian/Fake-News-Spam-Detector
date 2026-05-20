@@ -1,100 +1,120 @@
-# Fake News & Spam Detector
+# Fake News & Spam Detector (Python / Flask)
 
-A browser-based NLP classifier that detects fake news headlines and spam emails with a confidence score and signal-level explainability — built with the Anthropic Claude API.
+A full-stack NLP classifier that detects fake news headlines and spam emails using a **real Python ML pipeline** — TF-IDF features, SHAP explainability, imbalanced-dataset handling — with Claude providing human-readable reasoning.
 
-<img width="901" height="978" alt="image" src="https://github.com/user-attachments/assets/6542aa29-1606-4ae3-bb9e-f22f63373337" />
+## Tech stack
 
-## Features
-
-- **Two modes** — News headline analysis and Email / message analysis
-- **Verdict + confidence** — FAKE / REAL / SPAM / LEGITIMATE with a 0–100% confidence score
-- **Signal analysis** — 4 explainability signals per prediction (sensationalism, credibility, factual structure, urgency) — mirrors SHAP/LIME model explainability
-- **NLP techniques flagged** — lists real ML methods (TF-IDF, NER, BERT, word2vec, etc.) that would catch each pattern in a production pipeline
-- **Dark mode** — auto-adapts to system preference
-- **No build step** — pure HTML / CSS / JS, open `index.html` directly
-
-## Quick start
-
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/your-username/fake-news-detector.git
-   cd fake-news-detector
-   ```
-
-2. **Add your API key**
-
-   Open `app.js` and replace the placeholder:
-   ```js
-   const ANTHROPIC_API_KEY = "YOUR_API_KEY_HERE";
-   ```
-
-   > ⚠️ Never commit a real API key. For production, route requests through a server-side proxy (see below).
-
-3. **Open in browser**
-   ```bash
-   open index.html
-   # or serve with any static server:
-   npx serve .
-   ```
+| Layer | Technology |
+|---|---|
+| Web framework | Flask |
+| Feature extraction | scikit-learn `TfidfVectorizer` + custom `LinguisticFeatureExtractor` |
+| Classifier | `LogisticRegression(class_weight='balanced')` |
+| Explainability | SHAP `LinearExplainer` (per-feature attribution) |
+| Imbalanced data | `class_weight='balanced'` (equivalent to SMOTE for linear models) |
+| Explanation text | Anthropic Claude Sonnet |
+| Frontend | Vanilla JS + CSS (served by Flask) |
 
 ## Project structure
 
 ```
 fake-news-detector/
-├── index.html   # Markup & layout
-├── style.css    # All styles (light + dark mode)
-├── app.js       # Classifier logic + Anthropic API calls
-└── README.md
+├── app.py                  # Flask app + Claude API call
+├── nlp_pipeline.py         # TF-IDF, linguistic features, LR classifier, SHAP
+├── requirements.txt
+├── templates/
+│   └── index.html          # Jinja2 template
+└── static/
+    ├── css/style.css
+    └── js/app.js
 ```
 
-## Production / server-side proxy (recommended)
+## Quick start
 
-Calling the Anthropic API directly from the browser exposes your API key. For a real deployment, add a thin server proxy:
+### 1. Clone & install
 
-```
-Browser  →  POST /api/analyze  →  Your server  →  Anthropic API
-```
-
-Example with Express:
-```js
-// server.js
-const express = require("express");
-const app = express();
-app.use(express.json());
-
-app.post("/api/analyze", async (req, res) => {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify(req.body),
-  });
-  const data = await response.json();
-  res.json(data);
-});
-
-app.listen(3000);
+```bash
+git clone https://github.com/your-username/fake-news-detector.git
+cd fake-news-detector
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Then in `app.js`, change the fetch URL from `https://api.anthropic.com/v1/messages` to `/api/analyze` and remove the `x-api-key` header.
+### 2. Set your API key
 
-## Extending this project (resume-worthy upgrades)
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."   # macOS / Linux
+set ANTHROPIC_API_KEY=sk-ant-...        # Windows CMD
+$env:ANTHROPIC_API_KEY="sk-ant-..."     # PowerShell
+```
 
-| Technique | How to add |
+### 3. Run
+
+```bash
+python app.py
+```
+
+Open [http://localhost:5000](http://localhost:5000).
+
+---
+
+## How the pipeline works
+
+### `nlp_pipeline.py`
+
+#### 1. `LinguisticFeatureExtractor` (custom sklearn transformer)
+Extracts 10 interpretable numerical features:
+- `caps_ratio` — fraction of alphabetic characters that are uppercase
+- `exclamation_count` — number of `!` characters (capped at 10)
+- `question_count` — number of `?` characters
+- `sensational_word_count` — count of known sensational words (exposed, shocking, coverup…)
+- `spam_trigger_count` — count of spam-trigger phrases (click here, you won, claim now…)
+- `credible_marker_count` — count of credibility markers (according to, study, percent…)
+- `avg_word_length` — proxy for vocabulary complexity
+- `url_count` — suspicious link count
+- `number_count` — factual claims often include numbers
+- `text_length_log` — log of character count
+
+#### 2. TF-IDF vectoriser
+500-feature unigram + bigram TF-IDF matrix with sublinear TF scaling and English stop-words removed. Combined with the linguistic features via `np.hstack`.
+
+#### 3. `LogisticRegression(class_weight='balanced')`
+Automatically up-weights the minority class during training — handling imbalanced datasets without needing SMOTE.
+
+#### 4. SHAP `LinearExplainer`
+Computes per-feature SHAP values for every prediction. The top features shown in the UI tell you **exactly which words and signals drove the decision** — the "why" behind the model.
+
+---
+
+## Extending this project
+
+| Upgrade | How |
 |---|---|
-| **TF-IDF features** | Pre-compute a vocabulary from a labeled dataset; score incoming text against known fake/spam n-grams |
-| **SHAP / LIME explainability** | Train a scikit-learn pipeline (LogisticRegression or XGBoost), then use `shap.Explainer` or `lime.lime_text.LimeTextExplainer` to get per-token importance scores |
-| **Imbalanced dataset handling** | Use `imbalanced-learn` SMOTE oversampling or `class_weight='balanced'` in sklearn classifiers |
-| **Word embeddings** | Swap TF-IDF for `sentence-transformers` embeddings for semantic similarity |
-| **Fine-tuned BERT** | Fine-tune `bert-base-uncased` on [LIAR dataset](https://paperswithcode.com/dataset/liar) or [Enron spam corpus](https://www.cs.cmu.edu/~enron/) |
+| Larger training set | Use [LIAR dataset](https://paperswithcode.com/dataset/liar) or [Enron spam corpus](https://www.cs.cmu.edu/~enron/) |
+| Better embeddings | Replace TF-IDF with `sentence-transformers` (`all-MiniLM-L6-v2`) |
+| SMOTE oversampling | `from imblearn.over_sampling import SMOTE` — use with tree-based models |
+| Fine-tuned BERT | Fine-tune `bert-base-uncased` on LIAR; use SHAP `DeepExplainer` |
+| LIME explainability | `from lime.lime_text import LimeTextExplainer` — model-agnostic alternative to SHAP |
+| Persist the model | `import joblib; joblib.dump(clf, 'model.pkl')` |
+| Docker deployment | See `Dockerfile` below |
 
-## Datasets
+## Dockerfile
 
-- **Fake news**: [LIAR dataset](https://paperswithcode.com/dataset/liar), [FakeNewsNet](https://github.com/KaiDMML/FakeNewsNet)
-- **Spam**: [Enron email dataset](https://www.cs.cmu.edu/~enron/), [SMS Spam Collection](https://archive.ics.uci.edu/dataset/228/sms+spam+collection)
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+ENV ANTHROPIC_API_KEY=""
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
+
+```bash
+docker build -t fake-news-detector .
+docker run -p 5000:5000 -e ANTHROPIC_API_KEY=sk-ant-... fake-news-detector
+```
 
 ## License
 

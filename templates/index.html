@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake News & Spam Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="app-header">
+      <div class="logo">
+        <i class="ti ti-shield-search"></i>
+        <span>Fake News & Spam Detector</span>
+      </div>
+      <p class="tagline">TF-IDF · SHAP explainability · Logistic Regression · Claude reasoning</p>
+    </header>
+
+    <main class="main-content">
+
+      <!-- Input card -->
+      <section class="card input-panel">
+        <div class="tabs" role="tablist">
+          <button class="tab active" id="tab-news"  role="tab" aria-selected="true"  onclick="switchTab('news')">
+            <i class="ti ti-news"></i> News headline
+          </button>
+          <button class="tab"        id="tab-email" role="tab" aria-selected="false" onclick="switchTab('email')">
+            <i class="ti ti-mail"></i> Email / message
+          </button>
+        </div>
+
+        <textarea id="input-text" class="input-area"
+          placeholder="Paste a news headline or article snippet…"
+          rows="4" aria-label="Text to analyze"></textarea>
+
+        <div class="examples-section">
+          <p class="section-label">Try an example</p>
+          <div class="examples-row" id="examples-row"></div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-primary" id="analyze-btn" onclick="analyze()">
+            <i class="ti ti-shield-search"></i> Analyze
+          </button>
+          <button class="btn-ghost" onclick="clearAll()">
+            <i class="ti ti-x"></i> Clear
+          </button>
+        </div>
+      </section>
+
+      <!-- Results -->
+      <section id="result-area" aria-live="polite"></section>
+
+      <!-- Pipeline info -->
+      <section class="card pipeline-info">
+        <h2 class="info-heading">Python NLP pipeline</h2>
+        <div class="pipeline-steps">
+          <div class="step">
+            <span class="step-icon"><i class="ti ti-file-text"></i></span>
+            <div>
+              <strong>TF-IDF vectoriser</strong>
+              <p>500 unigram + bigram features, sublinear TF, English stop-words removed (scikit-learn)</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-icon"><i class="ti ti-tool"></i></span>
+            <div>
+              <strong>Linguistic feature extractor</strong>
+              <p>10 hand-crafted signals: caps ratio, exclamation count, sensational word count, URL count, credible marker count, and more</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-icon"><i class="ti ti-scale"></i></span>
+            <div>
+              <strong>Logistic Regression · <code>class_weight='balanced'</code></strong>
+              <p>Handles imbalanced datasets automatically — no need for SMOTE oversampling on small corpora</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-icon"><i class="ti ti-chart-dots"></i></span>
+            <div>
+              <strong>SHAP LinearExplainer</strong>
+              <p>Per-feature SHAP values for every prediction — tells you <em>why</em> the model decided what it did</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-icon"><i class="ti ti-brain"></i></span>
+            <div>
+              <strong>Claude Sonnet — plain-English reasoning</strong>
+              <p>Converts SHAP signals into a human-readable explanation grounded in the actual text</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>Python · Flask · scikit-learn · SHAP · Anthropic API</p>
+    </footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

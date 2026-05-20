@@ -1,0 +1,7 @@
+flask>=3.0
+anthropic>=0.25
+scikit-learn>=1.4
+imbalanced-learn>=0.12
+shap>=0.45
+numpy>=1.26
+pandas>=2.2

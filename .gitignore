@@ -1,15 +1,13 @@
-# Never commit secrets
+venv/
+__pycache__/
+*.pyc
+*.pyo
 .env
 .env.local
-secrets.js
-
-# OS files
+*.pkl
+*.joblib
 .DS_Store
 Thumbs.db
-
-# Editor
-.vscode/
 .idea/
-
-# Node (if you add a proxy server)
-node_modules/
+.vscode/
+instance/
